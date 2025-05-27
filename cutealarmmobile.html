@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timer & Alarm - Fixed Bear Display</title>
+  <style>
+    /* Your existing styles unchanged... */
+    body {
+      background-color: #fffacd;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 50px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 600px;
+      transform: translate(-50%, -50%);
+      background-image: url("https://wallpapers.com/images/hd/minecraft-pixel-heart-icon-5re1awi9i7gwmzuo.jpg");
+      background-repeat: no-repeat;
+      background-size: contain;
+      opacity: 0.8;
+      z-index: 0;
+      pointer-events: none;
+    }
+    h1 {
+      color: #333;
+      position: relative;
+      z-index: 1;
+    }
+    .timer, .alarm {
+      margin-top: 30px;
+      position: relative;
+      z-index: 1;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      margin: 5px;
+      position: relative;
+      z-index: 1;
+    }
+    #alarm-time-display {
+      font-weight: bold;
+      color: #444;
+    }
+    .background-chick,
+    .bear-corner,
+    .bear {
+      position: absolute;
+      background-repeat: no-repeat;
+      background-size: contain;
+      pointer-events: none;
+    }
+    .background-chick {
+      bottom: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="%23FAD02C"%3E%3Ccircle cx="16" cy="16" r="14"/%3E%3Ccircle cx="11" cy="13" r="2" fill="%23000"/%3E%3Ccircle cx="21" cy="13" r="2" fill="%23000"/%3E%3Cpolygon points="16,18 18,22 14,22" fill="%23FF6B6B"/%3E%3C/svg%3E');
+    }
+    .bear-corner {
+      width: 100px;
+      height: 120px;
+      background-image: url("https://i.pinimg.com/originals/91/40/a4/9140a45d2e1bbd036710ea76585949f7.jpg");
+      z-index: 2;
+    }
+    .bear-top-left { top: 0; left: 0; }
+    .bear-top-right { top: 0; right: 0; }
+    .bear-bottom-left { bottom: 0; left: 0; }
+    .bear-bottom-right { bottom: 0; right: 0; }
+    .bear {
+      display: none;
+      top: 20%;
+      left: 50%;
+      width: 200px;
+      height: 250px;
+      transform: translateX(-50%);
+      background-image: url("https://i.pinimg.com/originals/91/40/a4/9140a45d2e1bbd036710ea76585949f7.jpg");
+      z-index: 10;
+      /* relative positioning for ::after */
+      position: absolute;
+    }
+    .bear::after {
+      content: attr(data-time);
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 5px 10px;
+      font-size: 1.2rem;
+      color: black;
+      border-radius: 8px;
+      display: block;
+      white-space: nowrap;
+      font-weight: bold;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    .presets {
+      margin-top: 20px;
+      z-index: 1;
+      position: relative;
+    }
+    .presets button {
+      background-color: #fdd835;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    @keyframes fall {
+      0% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+    }
+    #glitter-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      width: 100vw;
+      height: 100vh;
+      z-index: 5;
+    }
+    .hearts {
+      background-image: url("https://wallpapers.com/images/hd/minecraft-pixel-heart-icon-5re1awi9i7gwmzuo.jpg");
+      background-repeat: no-repeat;
+      background-size: contain;
+      pointer-events: none;
+      position: fixed;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glitter-canvas"></canvas>
+
+  <div class="background-chick"></div>
+  <div class="bear-corner bear-top-left"></div>
+  <div class="bear-corner bear-top-right"></div>
+  <div class="bear-corner bear-bottom-left"></div>
+  <div class="bear-corner bear-bottom-right"></div>
+
+  <div class="bear" id="bear"></div>
+
+  <h1>⏰ Cute Timer & Alarm</h1>
+
+  <div class="timer">
+    <h2>Timer</h2>
+    <input type="number" id="timer-seconds" placeholder="Enter seconds" />
+    <button onclick="startTimer()">Start Timer</button>
+    <p id="timer-display"></p>
+    <div class="presets">
+      <button onclick="setPresetTimer(600)">🍳 Eat Breakfast (10 mins)</button>
+      <button onclick="setPresetTimer(3600)">🚿 Get Ready (1 hour)</button>
+      <button onclick="setPresetTimer(7200)">📚 Study (2 hours)</button>
+    </div>
+  </div>
+
+  <div class="alarm">
+    <h2>Alarm</h2>
+    <input type="time" id="alarm-time" />
+    <button onclick="setAlarm()">Set Alarm</button>
+    <p>Alarm set for: <span id="alarm-time-display">Not set</span></p>
+    <div class="presets">
+      <button onclick="setPresetAlarm('22:00')">😴 Sleep at 10:00 PM</button>
+    </div>
+  </div>
+
+  <audio id="alarm-sound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+
+  <script>
+    let timer;
+    let alarmTime;
+
+    // Show the bear and set the timer text on it
+    function showBear(message = '') {
+      const bear = document.getElementById('bear');
+      bear.setAttribute('data-time', message);
+      bear.style.display = 'block';
+    }
+
+    // Hide the bear
+    function hideBear() {
+      document.getElementById('bear').style.display = 'none';
+    }
+
+    function showerHearts() {
+      const heartCount = 50;
+      for (let i = 0; i < heartCount; i++) {
+        const heart = document.createElement('div');
+        heart.classList.add('hearts');
+        heart.style.left = `${Math.random() * 100}%`;
+        heart.style.top = `${-Math.random() * 100}px`;
+        heart.style.width = '30px';
+        heart.style.height = '30px';
+        heart.style.animation = `fall ${2 + Math.random() * 2}s linear forwards`;
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 4000);
+      }
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      let seconds = parseInt(document.getElementById('timer-seconds').value);
+      if (isNaN(seconds) || seconds <= 0) return alert('Enter a valid number of seconds.');
+
+      const display = document.getElementById('timer-display');
+      display.textContent = `Time left: ${seconds}s`;
+
+      // Show bear with initial time
+      showBear(formatTime(seconds));
+
+      timer = setInterval(() => {
+        seconds--;
+        display.textContent = `Time left: ${seconds}s`;
+
+        // Update bear timer text live
+        showBear(formatTime(seconds));
+
+        if (seconds <= 0) {
+          clearInterval(timer);
+          display.textContent = '⏰ Timer done!';
+          hideBear();  // Hide bear after timer ends
+          document.getElementById('alarm-sound').play();
+          showerHearts();
+        }
+      }, 1000);
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+    }
+
+    function setPresetTimer(seconds) {
+      document.getElementById('timer-seconds').value = seconds;
+      startTimer();
+    }
+
+    function setAlarm() {
+      alarmTime = document.getElementById('alarm-time').value;
+      if (!alarmTime) return alert('Select a valid alarm time.');
+      document.getElementById('alarm-time-display').textContent = alarmTime;
+      showBear(alarmTime);
+    }
+
+    function setPresetAlarm(time) {
+      document.getElementById('alarm-time').value = time;
+      setAlarm();
+    }
+
+    setInterval(() => {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
+      if (alarmTime === currentTime) {
+        document.getElementById('alarm-sound').play();
+        alarmTime = null;
+        document.getElementById('alarm-time-display').textContent = 'Not set';
+        alert('🔔 Alarm Ringing!');
+        showerHearts();
+        hideBear();  // Hide bear when alarm rings
+      }
+    }, 1000);
+
+    const canvas = document.getElementById('glitter-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function createParticles(x, y, count = 20) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 100,
+          color: `hsl(${Math.random() * 360}, 100%, 60%)`
+        });
+      }
+    }
+
+    function updateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+      requestAnimationFrame(updateParticles);
+    }
+
+    updateParticles();
+
+    document.addEventListener('mousemove', e => createParticles(e.clientX, e.clientY, 3));
+    document.addEventListener('click', e => createParticles(e.clientX, e.clientY, 30));
+  </script>
+</body>
+</html>
